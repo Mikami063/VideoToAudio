@@ -10,17 +10,24 @@ import SwiftUI
 struct ContentView: View {
     @State private var showSavePanel = false
     @State private var outputURL: URL?
+    @State private var isConverting = false
     
     var body: some View {
         VStack {
-            Text("Drag and drop a video file here")
-                .padding()
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color.gray.opacity(0.1))
-                .onDrop(of: ["public.file-url"], isTargeted: nil) { providers in
-                    handleDrop(providers: providers)
-                    return true
-                }
+            if isConverting {
+                Text("Converting...")
+                    .font(.headline)
+                    .padding()
+            } else {
+                Text("Drag and drop a video file here")
+                    .padding()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color.gray.opacity(0.1))
+                    .onDrop(of: ["public.file-url"], isTargeted: nil) { providers in
+                        handleDrop(providers: providers)
+                        return true
+                    }
+            }
             
             if let outputURL = outputURL {
                 Text("Saved to: \(outputURL.path)")
@@ -51,7 +58,19 @@ struct ContentView: View {
         savePanel.begin { response in
             if response == .OK, let selectedURL = savePanel.url {
                 outputURL = selectedURL
-                extractAudio(from: videoURL, to: selectedURL)
+                convertAudioInBackground(videoURL: videoURL, outputURL: selectedURL)
+            }
+        }
+    }
+    
+    private func convertAudioInBackground(videoURL: URL, outputURL: URL) {
+        isConverting = true
+        
+        DispatchQueue.global(qos: .userInitiated).async {
+            extractAudio(from: videoURL, to: outputURL)
+            
+            DispatchQueue.main.async {
+                isConverting = false
             }
         }
     }
@@ -77,7 +96,6 @@ struct ContentView: View {
         }
     }
 }
-
 
 #Preview {
     ContentView()
