@@ -12,31 +12,44 @@ struct ContentView: View {
     @State private var showSavePanel = false
     @State private var outputURL: URL?
     @State private var isConverting = false
+    @State private var isDragging = false
     
     var body: some View {
         VStack {
-            if isConverting {
-                Text("Converting...")
-                    .font(.headline)
-                    .padding()
-            } else {
-                Text("Drag and drop a video file here")
-                    .padding()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Color.gray.opacity(0.1))
-                    .onDrop(of: ["public.file-url"], isTargeted: nil) { providers in
-                        handleDrop(providers: providers)
-                        return true
+                    if isConverting {
+                        Text("Converting...")
+                            .font(.headline)
+                            .padding()
+                    } else {
+                        VStack {
+                            Text("Drag and drop a video file here")
+                                .font(.title2)
+                                .padding()
+                                .frame(maxWidth: .infinity, maxHeight: 200)
+                                .background(isDragging ? Color.blue.opacity(0.3) : Color.gray.opacity(0.1))
+                                .cornerRadius(12)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(isDragging ? Color.blue : Color.gray, lineWidth: 2)
+                                )
+                                .shadow(color: isDragging ? Color.blue.opacity(0.5) : Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
+                                .onDrop(of: ["public.file-url"], isTargeted: $isDragging) { providers in
+                                    handleDrop(providers: providers)
+                                    return true
+                                }
+                            
+                            
+                        }
+                        .padding()
                     }
+                    
+                    if let outputURL = outputURL {
+                        Text("Saved to: \(outputURL.path)")
+                            .padding()
+                    }
+                }
+                .frame(width: 400, height: 300)
             }
-            
-            if let outputURL = outputURL {
-                Text("Saved to: \(outputURL.path)")
-                    .padding()
-            }
-        }
-        .frame(width: 400, height: 200)
-    }
     
     private func handleDrop(providers: [NSItemProvider]) {
         for provider in providers {
