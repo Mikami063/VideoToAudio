@@ -1,5 +1,5 @@
 
-<img width="512" alt="icon" src="https://github.com/user-attachments/assets/16302b48-2f80-456e-9550-6c7d45779869">
+<img width="128" alt="icon" src="https://github.com/user-attachments/assets/16302b48-2f80-456e-9550-6c7d45779869">
 
 # Video to Audio
 
