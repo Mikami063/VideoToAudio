@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct ContentView: View {
     @State private var showSavePanel = false
@@ -53,12 +54,34 @@ struct ContentView: View {
     
     private func promptForSaveLocation(videoURL: URL) {
         let savePanel = NSSavePanel()
-        savePanel.allowedFileTypes = ["aac"]
+        
+        // Define allowed content types based on UTType
+        savePanel.allowedContentTypes = [
+            UTType(filenameExtension: "m4a")!,
+            UTType(filenameExtension: "flac")!,
+            UTType(filenameExtension: "mp3")!,
+            UTType(filenameExtension: "wav")!,
+            UTType(filenameExtension: "wma")!,
+            UTType(filenameExtension: "aac")!
+        ]
+        
         savePanel.nameFieldStringValue = videoURL.deletingPathExtension().lastPathComponent
-        savePanel.begin { response in
-            if response == .OK, let selectedURL = savePanel.url {
-                outputURL = selectedURL
-                convertAudioInBackground(videoURL: videoURL, outputURL: selectedURL)
+        
+        // Display the save panel in the main window
+        if let window = NSApplication.shared.windows.first {
+            savePanel.beginSheetModal(for: window) { response in
+                if response == .OK, let selectedURL = savePanel.url {
+                    outputURL = selectedURL
+                    convertAudioInBackground(videoURL: videoURL, outputURL: selectedURL)
+                }
+            }
+        } else {
+            // Fallback to regular save panel if the main window is not found
+            savePanel.begin { response in
+                if response == .OK, let selectedURL = savePanel.url {
+                    outputURL = selectedURL
+                    convertAudioInBackground(videoURL: videoURL, outputURL: selectedURL)
+                }
             }
         }
     }
@@ -86,7 +109,29 @@ struct ContentView: View {
             return
         }
         
-        task.arguments = ["-i", videoURL.path, "-vn", "-acodec", "copy", outputURL.path]
+        // Determine the audio codec based on the file extension
+        let fileExtension = outputURL.pathExtension.lowercased()
+        let audioCodec: String
+        
+        switch fileExtension {
+        case "m4a":
+            audioCodec = "aac"
+        case "flac":
+            audioCodec = "flac"
+        case "mp3":
+            audioCodec = "libmp3lame"
+        case "wav":
+            audioCodec = "pcm_s16le"
+        case "wma":
+            audioCodec = "wmav2"
+        case "aac":
+            audioCodec = "aac"
+        default:
+            print("Unsupported file format: \(fileExtension)")
+            return
+        }
+        
+        task.arguments = ["-i", videoURL.path, "-vn", "-acodec", audioCodec, outputURL.path]
         
         do {
             try task.run()
